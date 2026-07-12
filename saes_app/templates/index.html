@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S-AES Lab &mdash; Simulasi Simplified AES</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar navbar-expand-lg cipher-nav sticky-top">
+  <div class="container-xxl">
+    <a class="navbar-brand cipher-brand" href="#top">
+      <span class="brand-glyph">⌗</span> S-AES <span class="brand-thin">Lab</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#console">Konsol</a></li>
+        <li class="nav-item"><a class="nav-link" href="#reference">Tabel Referensi</a></li>
+        <li class="nav-item"><a class="nav-link" href="#result-section">Hasil</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="cipher-hero" id="top">
+  <div class="container-xxl py-5">
+    <div class="row align-items-center gy-4">
+      <div class="col-lg-7">
+        <p class="eyebrow"><i class="bi bi-cpu"></i> Substitution&ndash;Permutation Network &middot; 16-bit block</p>
+        <h1 class="hero-title">Simplified AES<br><span class="text-accent">step&#8209;by&#8209;step</span>, bukan kotak hitam.</h1>
+        <p class="hero-sub">
+          Masukkan plaintext 16-bit dan kunci 16-bit, lihat setiap transformasi &mdash;
+          Key Expansion, SubNibbles, ShiftRows, MixColumns, hingga AddRoundKey &mdash;
+          lengkap dengan detail perkalian di GF(2<sup>4</sup>).
+        </p>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="#console" class="btn btn-accent btn-lg px-4"><i class="bi bi-terminal"></i>&nbsp; Coba Simulasi</a>
+          <a href="#pipeline" class="btn btn-outline-light btn-lg px-4">Lihat Alur Algoritma</a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="hero-panel">
+          <div class="hero-panel-row"><span>Ukuran blok</span><b>16 bit</b></div>
+          <div class="hero-panel-row"><span>Ukuran kunci</span><b>16 bit</b></div>
+          <div class="hero-panel-row"><span>Jumlah round</span><b>2 + Initial AddRoundKey</b></div>
+          <div class="hero-panel-row"><span>Field</span><b>GF(2<sup>4</sup>), x<sup>4</sup>+x+1</b></div>
+          <div class="hero-panel-row"><span>Subkunci</span><b>K0, K1, K2</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PIPELINE DIAGRAM ============ -->
+<section class="py-5 border-bottom-hair" id="pipeline">
+  <div class="container-xxl">
+    <p class="section-eyebrow">01 &mdash; Alur Algoritma</p>
+    <h2 class="section-title mb-4">Struktur Enkripsi S-AES</h2>
+    <div class="pipeline-track">
+      <div class="pipeline-node node-io"><i class="bi bi-file-earmark-lock"></i><span>Plaintext</span></div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-node"><span class="node-tag">Initial</span>AddRoundKey<small>K0</small></div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-node node-round">
+        <span class="node-tag">Round 1</span>
+        SubNibbles &rarr; ShiftRows &rarr; MixColumns &rarr; AddRoundKey
+        <small>K1</small>
+      </div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-node node-round">
+        <span class="node-tag">Round 2 (final)</span>
+        SubNibbles &rarr; ShiftRows &rarr; AddRoundKey
+        <small>K2</small>
+      </div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-node node-io"><i class="bi bi-file-earmark-lock2-fill"></i><span>Ciphertext</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONSOLE / INPUT ============ -->
+<section class="py-5 border-bottom-hair" id="console">
+  <div class="container-xxl">
+    <p class="section-eyebrow">02 &mdash; Konsol</p>
+    <h2 class="section-title mb-4">Jalankan Enkripsi / Dekripsi</h2>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="console-panel">
+          <form id="saesForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label">Mode Operasi</label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="mode" id="modeEncrypt" value="encrypt" checked>
+                <label class="btn btn-mode" for="modeEncrypt"><i class="bi bi-lock-fill"></i> Enkripsi</label>
+
+                <input type="radio" class="btn-check" name="mode" id="modeDecrypt" value="decrypt">
+                <label class="btn btn-mode" for="modeDecrypt"><i class="bi bi-unlock-fill"></i> Dekripsi</label>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" id="inputLabel">Plaintext (16-bit biner)</label>
+              <input type="text" class="form-control mono-input" id="inputBits"
+                     maxlength="16" placeholder="1101011100101000" autocomplete="off">
+              <div class="form-text">Hanya karakter 0 dan 1, tepat 16 digit.</div>
+              <div class="invalid-feedback" id="inputError"></div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Kunci (16-bit biner)</label>
+              <input type="text" class="form-control mono-input" id="keyBits"
+                     maxlength="16" placeholder="0100101011110101" autocomplete="off">
+              <div class="form-text">Hanya karakter 0 dan 1, tepat 16 digit.</div>
+              <div class="invalid-feedback" id="keyError"></div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-accent flex-grow-1" id="submitBtn">
+                <i class="bi bi-play-fill"></i> SUBMIT
+              </button>
+              <button type="button" class="btn btn-outline-light" id="resetBtn">
+                <i class="bi bi-arrow-counterclockwise"></i> RESET
+              </button>
+              <button type="button" class="btn btn-outline-secondary" id="sampleBtn">
+                Contoh
+              </button>
+            </div>
+          </form>
+          <div id="apiError" class="alert alert-danger mt-3 d-none"></div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="console-panel h-100">
+          <p class="panel-heading"><i class="bi bi-lightbulb"></i> Cara pakai</p>
+          <ol class="howto-list">
+            <li>Pilih mode <b>Enkripsi</b> untuk mengubah plaintext &rarr; ciphertext, atau <b>Dekripsi</b> untuk arah sebaliknya.</li>
+            <li>Isi nilai 16-bit biner pada kolom teks &amp; kunci.</li>
+            <li>Tekan <b>SUBMIT</b> &mdash; hasil dan seluruh langkah perhitungan akan muncul di bagian <a href="#result-section">Hasil</a> di bawah.</li>
+            <li>Klik tombol <b>Contoh</b> untuk mengisi otomatis nilai uji.</li>
+          </ol>
+          <div class="hint-box">
+            <i class="bi bi-info-circle"></i>
+            Dekripsi menggunakan kunci yang <u>sama</u> dengan yang dipakai saat enkripsi
+            (S-AES adalah algoritma simetris).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULT SECTION ============ -->
+<section class="py-5 border-bottom-hair" id="result-section">
+  <div class="container-xxl">
+    <p class="section-eyebrow">03 &mdash; Hasil</p>
+    <h2 class="section-title mb-4">Output &amp; Detail Perhitungan</h2>
+
+    <div id="resultEmpty" class="empty-state">
+      <i class="bi bi-diagram-3"></i>
+      <p>Belum ada proses dijalankan. Isi form di atas dan tekan <b>SUBMIT</b> untuk melihat hasil di sini.</p>
+    </div>
+
+    <div id="resultContent" class="d-none">
+
+      <!-- Summary -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="summary-card">
+            <span class="summary-label" id="summaryInputLabel">PLAINTEXT</span>
+            <span class="summary-bin" id="sumInputBin">-</span>
+            <span class="summary-hex" id="sumInputHex">-</span>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="summary-card">
+            <span class="summary-label">KUNCI</span>
+            <span class="summary-bin" id="sumKeyBin">-</span>
+            <span class="summary-hex" id="sumKeyHex">-</span>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="summary-card summary-card-accent">
+            <span class="summary-label" id="summaryOutputLabel">CIPHERTEXT</span>
+            <span class="summary-bin" id="sumOutputBin">-</span>
+            <span class="summary-hex" id="sumOutputHex">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stepper nav -->
+      <div class="stepper-nav mb-3" id="stepperNav"></div>
+
+      <!-- Accordion steps -->
+      <div class="accordion cipher-accordion" id="stepsAccordion"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REFERENCE TABLES ============ -->
+<section class="py-5" id="reference">
+  <div class="container-xxl">
+    <p class="section-eyebrow">04 &mdash; Referensi</p>
+    <h2 class="section-title mb-4">Tabel &amp; Konstanta S-AES</h2>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="ref-card">
+          <p class="panel-heading">S-Box (SubNibble)</p>
+          <div class="table-responsive">
+            <table class="table table-sm ref-table mono-table">
+              <thead><tr><th>In</th>{% for i in range(16) %}<th>{{ '%X' % i }}</th>{% endfor %}</tr></thead>
+              <tbody><tr><th>Out</th>{% for v in sbox %}<td>{{ '%X' % v }}</td>{% endfor %}</tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="ref-card">
+          <p class="panel-heading">Inverse S-Box (InvSubNibble)</p>
+          <div class="table-responsive">
+            <table class="table table-sm ref-table mono-table">
+              <thead><tr><th>In</th>{% for i in range(16) %}<th>{{ '%X' % i }}</th>{% endfor %}</tr></thead>
+              <tbody><tr><th>Out</th>{% for v in inv_sbox %}<td>{{ '%X' % v }}</td>{% endfor %}</tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="ref-card">
+          <p class="panel-heading">Matriks MixColumns</p>
+          <div class="matrix-box mono-table">
+            <div>{{ mix_matrix[0][0] }}&nbsp;&nbsp;{{ mix_matrix[0][1] }}</div>
+            <div>{{ mix_matrix[1][0] }}&nbsp;&nbsp;{{ mix_matrix[1][1] }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="ref-card">
+          <p class="panel-heading">Matriks InvMixColumns</p>
+          <div class="matrix-box mono-table">
+            <div>{{ inv_mix_matrix[0][0] }}&nbsp;&nbsp;{{ inv_mix_matrix[0][1] }}</div>
+            <div>{{ inv_mix_matrix[1][0] }}&nbsp;&nbsp;{{ inv_mix_matrix[1][1] }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="ref-card">
+          <p class="panel-heading">Konstanta RCON &amp; Field</p>
+          <div class="mono-table small">
+            <div>RCON1 = {{ '{:08b}'.format(rcon1) }} (0x{{ '%02X' % rcon1 }})</div>
+            <div>RCON2 = {{ '{:08b}'.format(rcon2) }} (0x{{ '%02X' % rcon2 }})</div>
+            <div class="mt-2">GF(2<sup>4</sup>) poly = x<sup>4</sup>+x+1 (0x13)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="cipher-footer">
+  <div class="container-xxl d-flex flex-wrap justify-content-between gap-2">
+    <span>S-AES Lab &middot; Simulasi Simplified Advanced Encryption Standard</span>
+    <span>Dibangun dengan Flask &amp; Bootstrap 5</span>
+  </div>
+</footer>
+
+<!-- Templates for JS rendering (hidden) -->
+<template id="tpl-nibble-grid">
+  <div class="nibble-grid">
+    <div class="nibble-cell" data-cell="s00"></div>
+    <div class="nibble-cell" data-cell="s01"></div>
+    <div class="nibble-cell" data-cell="s10"></div>
+    <div class="nibble-cell" data-cell="s11"></div>
+  </div>
+</template>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
